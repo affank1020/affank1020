@@ -2,7 +2,7 @@
 
 ### Check out my work portfolio [here](https://affank1020.github.io)
 
-💬 I’m currently...
+### 💬 I’m currently...
 - In the second year of my Bachelor's degree in Maths and Computer Science at UOM
 - Getting involved in open-source development
 - Messing with AI and machine learning techniques using Python
