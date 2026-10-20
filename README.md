@@ -1,1 +1,1 @@
-.
+affankhan.dev
