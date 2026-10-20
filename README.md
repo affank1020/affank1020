@@ -1,1 +1,1 @@
-[affankhan.dev](affankhan.dev)
+[affankhan.dev](https://affankhan.dev)
