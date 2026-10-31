@@ -8,4 +8,4 @@ Computer Science and Mathematics at the University of Manchester. Previously int
 
 ![Programming language distribution across selected repositories](./assets/profile/languages.svg)
 
-*Automatically calculated from [seven selected public repositories](./scripts/render_profile.py), weighted equally per repository. Older C# game projects, notebooks, CSS and HTML are excluded.*
+*Automatically calculated from [eight selected public repositories](./scripts/render_profile.py), weighted equally per repository. Includes one representative older C# project; notebooks, CSS and HTML are excluded.*
