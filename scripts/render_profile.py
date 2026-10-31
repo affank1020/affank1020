@@ -7,8 +7,10 @@ Language shares are calculated from selected repos, each weighted equally.
 
 import json
 import os
+import re
 from collections import defaultdict
 from html import escape
+from hashlib import sha256
 from pathlib import Path
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
@@ -174,8 +176,25 @@ def main():
     shares = languages()
     out = Path("assets/profile")
     out.mkdir(parents=True, exist_ok=True)
-    (out / "activity.svg").write_text(activity_card(metrics), encoding="utf-8")
-    (out / "languages.svg").write_text(language_card(shares), encoding="utf-8")
+    # Unique image URLs avoid stale GitHub proxy/browser caches on the profile.
+    readme_path = Path("README.md")
+    readme = readme_path.read_text(encoding="utf-8")
+    cards = {
+        "activity": activity_card(metrics),
+        "languages": language_card(shares),
+    }
+    for name, content in cards.items():
+        digest = sha256(content.encode("utf-8")).hexdigest()[:12]
+        filename = f"{name}-{digest}.svg"
+        for old_file in out.glob(f"{name}*.svg"):
+            if old_file.name != filename:
+                old_file.unlink()
+        (out / filename).write_text(content, encoding="utf-8")
+        pattern = rf"\./assets/profile/{name}(?:-[a-f0-9]{{12}})?\.svg"
+        readme, replaced = re.subn(pattern, f"./assets/profile/{filename}", readme)
+        if replaced != 1:
+            raise RuntimeError(f"Expected exactly one {name} card reference in README")
+    readme_path.write_text(readme, encoding="utf-8")
     print("Activity:", metrics)
     print("Languages:", {k: round(v, 1) for k, v in shares.items()})
 
