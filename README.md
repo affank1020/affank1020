@@ -8,4 +8,4 @@ Computer Science and Mathematics at the University of Manchester. Previously int
 
 ![Programming language distribution across selected repositories](./assets/profile/languages-b3ebab6395cf.svg)
 
-*Language mix across [eight selected public projects](./scripts/render_profile.py), weighted equally by repository.*
+*Language mix across [10 public source projects](./scripts/render_profile.py), weighted equally per repository.*

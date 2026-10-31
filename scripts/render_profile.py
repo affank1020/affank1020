@@ -16,7 +16,9 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 USER = "affank1020"
-REPOS = ("atlas", "relay", "EcoPrompt", "ascii-donut", "chatflow", "benchmark", "agent-workflows", "Football-Match-Simulation")
+REPOS = ("atlas", "relay", "EcoPrompt", "ascii-donut", "chatflow", "benchmark", "agent-workflows", "Football-Match-Simulation", "portfolio-site", "buzzer-beater-tk", "2D-Building-Physics")
+# Public release repository containing an executable and assets but no source files.
+SOURCELESS_REPOS = {"buzzer-beater-tk"}
 LANGS = ("TypeScript", "Python", "Kotlin", "Rust", "JavaScript", "C#", "Swift")
 COLORS = {
     "TypeScript": "#428bca",
@@ -76,18 +78,28 @@ def activity():
 
 
 def languages():
-    """Each repository gets equal weight; source bytes determine its internal mix."""
-    result = defaultdict(float)
+    """Balance source language shares equally across repositories with source."""
+    totals = defaultdict(float)
+    counted = 0
+    skipped = []
     for repo in REPOS:
         langs = api(f"https://api.github.com/repos/{USER}/{repo}/languages")
+        if not isinstance(langs, dict):
+            raise RuntimeError(f"Unexpected languages response for {repo}")
         selected = {k: int(langs[k]) for k in LANGS if k in langs and int(langs[k]) > 0}
-        total = sum(selected.values())
-        if not total:
+        size = sum(selected.values())
+        if not size:
+            if repo in SOURCELESS_REPOS:
+                skipped.append(repo)
+                continue
             raise RuntimeError(f"No tracked source language in {repo}")
+        counted += 1
         for lang, amount in selected.items():
-            result[lang] += 100 * amount / total / len(REPOS)
-    return dict(sorted(result.items(), key=lambda item: -item[1]))
-
+            totals[lang] += amount / size
+    if counted == 0:
+        raise RuntimeError("No selected repositories contain supported source languages")
+    shares = {lang: 100 * weight / counted for lang, weight in totals.items()}
+    return dict(sorted(shares.items(), key=lambda item: -item[1])), counted, skipped
 
 def text(x, y, value, size=13, color=MUTED, weight=400, anchor="start"):
     return (f'<text x="{x}" y="{y}" font-size="{size}" fill="{color}" '
@@ -157,10 +169,10 @@ def treemap(items, x, y, width, height):
     return body
 
 
-def language_card(shares):
+def language_card(shares, source_repo_count):
     """Weighted treemap on the left, legible ranked legend on the right."""
     body = text(28, 35, "Languages", 19, FG, 600)
-    body += text(792, 34, f"{len(REPOS)} selected repositories", 12, anchor="end")
+    body += text(792, 34, f"{source_repo_count} source repositories", 12, anchor="end")
     ordered = list(shares.items())
     body += treemap(ordered, 28, 58, 464, 235)
     for index, (lang, percent) in enumerate(ordered):
@@ -173,7 +185,7 @@ def language_card(shares):
 
 def main():
     metrics = activity()
-    shares = languages()
+    shares, counted, skipped = languages()
     out = Path("assets/profile")
     out.mkdir(parents=True, exist_ok=True)
     # Unique image URLs avoid stale GitHub proxy/browser caches on the profile.
@@ -181,7 +193,7 @@ def main():
     readme = readme_path.read_text(encoding="utf-8")
     cards = {
         "activity": activity_card(metrics),
-        "languages": language_card(shares),
+        "languages": language_card(shares, counted),
     }
     for name, content in cards.items():
         digest = sha256(content.encode("utf-8")).hexdigest()[:12]
@@ -197,6 +209,7 @@ def main():
     readme_path.write_text(readme, encoding="utf-8")
     print("Activity:", metrics)
     print("Languages:", {k: round(v, 1) for k, v in shares.items()})
+    print("Source repositories:", counted, "of", len(REPOS), "selected; no source:", skipped)
 
 
 if __name__ == "__main__":
