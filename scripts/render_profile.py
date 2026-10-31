@@ -19,13 +19,13 @@ from urllib.request import Request, urlopen
 USER = "affank1020"
 LANGS = ("TypeScript", "Python", "Kotlin", "Rust", "JavaScript", "C#", "Swift")
 COLORS = {
-    "TypeScript": "#428bca",
-    "Python": "#43a8a2",
-    "Kotlin": "#ce6bae",
-    "Rust": "#cd8755",
-    "JavaScript": "#d6b945",
-    "C#": "#9b72d8",
-    "Swift": "#e96758",
+    "TypeScript": "#6f8ea3",
+    "Python": "#6f9f95",
+    "Kotlin": "#a67fa8",
+    "Rust": "#a68167",
+    "JavaScript": "#b09b63",
+    "C#": "#8d79b3",
+    "Swift": "#c27c6d",
 }
 BG, BORDER, FG, MUTED = "#0d1117", "#30363d", "#e6edf3", "#8b949e"
 
@@ -182,8 +182,8 @@ def treemap(items, x, y, width, height):
     color = COLORS[name]
     body = (f'<rect x="{inner_x:.2f}" y="{inner_y:.2f}" '
             f'width="{inner_width:.2f}" height="{inner_height:.2f}" '
-            f'rx="4" fill="{color}" fill-opacity="0.68" '
-            f'stroke="{color}" stroke-opacity="0.8"/>')
+            f'rx="4" fill="{color}" fill-opacity="0.42" '
+            f'stroke="{color}" stroke-opacity="0.65"/>')
     if inner_width >= 105 and inner_height >= 48:
         body += text(inner_x + 13, inner_y + 26, name, 14, FG, 600)
         body += text(inner_x + 13, inner_y + 45, f"{percent:.1f}%", 12, MUTED)
