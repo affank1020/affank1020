@@ -2,7 +2,7 @@
 """Small, dependency-free GitHub profile card generator.
 
 Activity is GitHub's trailing-year eligible contribution count.
-Language shares are calculated from selected repos, each weighted equally.
+Language shares are calculated from all public repositories, each weighted equally.
 """
 
 import json
@@ -12,13 +12,11 @@ from collections import defaultdict
 from html import escape
 from hashlib import sha256
 from pathlib import Path
+from urllib.parse import quote
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 USER = "affank1020"
-REPOS = ("atlas", "relay", "EcoPrompt", "ascii-donut", "chatflow", "benchmark", "agent-workflows", "Football-Match-Simulation", "portfolio-site", "buzzer-beater-tk", "2D-Building-Physics")
-# Public release repository containing an executable and assets but no source files.
-SOURCELESS_REPOS = {"buzzer-beater-tk"}
 LANGS = ("TypeScript", "Python", "Kotlin", "Rust", "JavaScript", "C#", "Swift")
 COLORS = {
     "TypeScript": "#428bca",
@@ -77,29 +75,54 @@ def activity():
     }
 
 
+def public_repositories():
+    """Discover all currently public, user-owned repositories (including new ones)."""
+    repos = []
+    page = 1
+    while True:
+        page_data = api(
+            f"https://api.github.com/users/{USER}/repos?type=owner&per_page=100&page={page}"
+        )
+        if not isinstance(page_data, list):
+            raise RuntimeError("Unexpected response when listing public repositories")
+        for item in page_data:
+            if item.get("owner", {}).get("login") == USER and item.get("private") is False:
+                repos.append(item["name"])
+        if len(page_data) < 100:
+            break
+        page += 1
+    if not repos:
+        raise RuntimeError("No public repositories found")
+    return sorted(set(repos), key=str.casefold)
+
+
 def languages():
-    """Balance source language shares equally across repositories with source."""
+    """Use all public repositories; weight each source-bearing repository equally."""
+    repos = public_repositories()
     totals = defaultdict(float)
     counted = 0
-    skipped = []
-    for repo in REPOS:
-        langs = api(f"https://api.github.com/repos/{USER}/{repo}/languages")
+    without_source = []
+    for repo in repos:
+        langs = api(
+            f"https://api.github.com/repos/{USER}/{quote(repo, safe='')}/languages"
+        )
         if not isinstance(langs, dict):
             raise RuntimeError(f"Unexpected languages response for {repo}")
-        selected = {k: int(langs[k]) for k in LANGS if k in langs and int(langs[k]) > 0}
-        size = sum(selected.values())
+        source = {lang: int(langs[lang]) for lang in LANGS
+                  if lang in langs and int(langs[lang]) > 0}
+        size = sum(source.values())
+        # Empty repos, binaries, assets and documentation contribute no code share.
         if not size:
-            if repo in SOURCELESS_REPOS:
-                skipped.append(repo)
-                continue
-            raise RuntimeError(f"No tracked source language in {repo}")
+            without_source.append(repo)
+            continue
         counted += 1
-        for lang, amount in selected.items():
+        for lang, amount in source.items():
             totals[lang] += amount / size
     if counted == 0:
-        raise RuntimeError("No selected repositories contain supported source languages")
+        raise RuntimeError("No public repositories contain tracked source languages")
     shares = {lang: 100 * weight / counted for lang, weight in totals.items()}
-    return dict(sorted(shares.items(), key=lambda item: -item[1])), counted, skipped
+    return dict(sorted(shares.items(), key=lambda item: -item[1])), repos, without_source
+
 
 def text(x, y, value, size=13, color=MUTED, weight=400, anchor="start"):
     return (f'<text x="{x}" y="{y}" font-size="{size}" fill="{color}" '
@@ -169,10 +192,9 @@ def treemap(items, x, y, width, height):
     return body
 
 
-def language_card(shares, source_repo_count):
+def language_card(shares):
     """Weighted treemap on the left, legible ranked legend on the right."""
     body = text(28, 35, "Languages", 19, FG, 600)
-    body += text(792, 34, f"{source_repo_count} source repositories", 12, anchor="end")
     ordered = list(shares.items())
     body += treemap(ordered, 28, 58, 464, 235)
     for index, (lang, percent) in enumerate(ordered):
@@ -185,7 +207,7 @@ def language_card(shares, source_repo_count):
 
 def main():
     metrics = activity()
-    shares, counted, skipped = languages()
+    shares, repos, skipped = languages()
     out = Path("assets/profile")
     out.mkdir(parents=True, exist_ok=True)
     # Unique image URLs avoid stale GitHub proxy/browser caches on the profile.
@@ -193,7 +215,7 @@ def main():
     readme = readme_path.read_text(encoding="utf-8")
     cards = {
         "activity": activity_card(metrics),
-        "languages": language_card(shares, counted),
+        "languages": language_card(shares),
     }
     for name, content in cards.items():
         digest = sha256(content.encode("utf-8")).hexdigest()[:12]
@@ -209,7 +231,7 @@ def main():
     readme_path.write_text(readme, encoding="utf-8")
     print("Activity:", metrics)
     print("Languages:", {k: round(v, 1) for k, v in shares.items()})
-    print("Source repositories:", counted, "of", len(REPOS), "selected; no source:", skipped)
+    print("Public repositories:", len(repos), repos, "without tracked source:", skipped)
 
 
 if __name__ == "__main__":
