@@ -19,13 +19,13 @@ USER = "affank1020"
 REPOS = ("atlas", "relay", "EcoPrompt", "ascii-donut", "chatflow", "benchmark", "agent-workflows", "Football-Match-Simulation")
 LANGS = ("TypeScript", "Python", "Kotlin", "Rust", "JavaScript", "C#", "Swift")
 COLORS = {
-    "TypeScript": "#9bb3c9",
-    "Python": "#b8c4aa",
-    "Kotlin": "#b8a8cc",
-    "Rust": "#c6b09d",
-    "JavaScript": "#c8c0a4",
-    "C#": "#b7a9bb",
-    "Swift": "#b4a6a1",
+    "TypeScript": "#428bca",
+    "Python": "#43a8a2",
+    "Kotlin": "#ce6bae",
+    "Rust": "#cd8755",
+    "JavaScript": "#d6b945",
+    "C#": "#9b72d8",
+    "Swift": "#e96758",
 }
 BG, BORDER, FG, MUTED = "#0d1117", "#30363d", "#e6edf3", "#8b949e"
 
@@ -147,8 +147,8 @@ def treemap(items, x, y, width, height):
     color = COLORS[name]
     body = (f'<rect x="{inner_x:.2f}" y="{inner_y:.2f}" '
             f'width="{inner_width:.2f}" height="{inner_height:.2f}" '
-            f'rx="4" fill="{color}" fill-opacity="0.27" '
-            f'stroke="{color}" stroke-opacity="0.55"/>')
+            f'rx="4" fill="{color}" fill-opacity="0.68" '
+            f'stroke="{color}" stroke-opacity="0.8"/>')
     if inner_width >= 105 and inner_height >= 48:
         body += text(inner_x + 13, inner_y + 26, name, 14, FG, 600)
         body += text(inner_x + 13, inner_y + 45, f"{percent:.1f}%", 12, MUTED)
