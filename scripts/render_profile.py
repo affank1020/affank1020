@@ -14,14 +14,15 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 USER = "affank1020"
-REPOS = ("atlas", "relay", "EcoPrompt", "ascii-donut", "chatflow", "benchmark", "agent-workflows")
-LANGS = ("TypeScript", "Python", "Kotlin", "Rust", "JavaScript")
+REPOS = ("atlas", "relay", "EcoPrompt", "ascii-donut", "chatflow", "benchmark", "agent-workflows", "Football-Match-Simulation")
+LANGS = ("TypeScript", "Python", "Kotlin", "Rust", "JavaScript", "C#")
 COLORS = {
     "TypeScript": "#9bb3c9",
     "Python": "#b8c4aa",
     "Kotlin": "#b8a8cc",
     "Rust": "#c6b09d",
     "JavaScript": "#c8c0a4",
+    "C#": "#b7a9bb",
 }
 BG, BORDER, FG, MUTED = "#0d1117", "#30363d", "#e6edf3", "#8b949e"
 
@@ -126,7 +127,7 @@ def language_card(shares):
         body += f'<circle cx="{x + 5}" cy="{y - 4}" r="5" fill="{COLORS[lang]}"/>'
         body += text(x + 19, y, lang, 13, FG)
         body += text(x + 241, y, f"{percent:.1f}%", anchor="end")
-    body += text(28, 204, "Repo-balanced source code · excludes markup, notebooks and older projects", 11)
+    body += text(28, 204, "Repo-balanced source code · excludes markup and notebooks", 11)
     return frame(224, body)
 
 
