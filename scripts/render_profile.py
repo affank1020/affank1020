@@ -15,7 +15,7 @@ from urllib.request import Request, urlopen
 
 USER = "affank1020"
 REPOS = ("atlas", "relay", "EcoPrompt", "ascii-donut", "chatflow", "benchmark", "agent-workflows", "Football-Match-Simulation")
-LANGS = ("TypeScript", "Python", "Kotlin", "Rust", "JavaScript", "C#")
+LANGS = ("TypeScript", "Python", "Kotlin", "Rust", "JavaScript", "C#", "Swift")
 COLORS = {
     "TypeScript": "#9bb3c9",
     "Python": "#b8c4aa",
@@ -23,6 +23,7 @@ COLORS = {
     "Rust": "#c6b09d",
     "JavaScript": "#c8c0a4",
     "C#": "#b7a9bb",
+    "Swift": "#b4a6a1",
 }
 BG, BORDER, FG, MUTED = "#0d1117", "#30363d", "#e6edf3", "#8b949e"
 
@@ -109,27 +110,64 @@ def activity_card(metrics):
             body += f'<path d="M{x - 19} 60v76" stroke="{BORDER}"/>'
         body += text(x, 109, f"{value:,}", 35, FG, 600)
         body += text(x, 132, name)
-    body += text(28, 158, "GitHub-eligible contributions · AI-assisted work", 11)
-    return frame(177, body)
+    return frame(156, body)
+
+
+def treemap(items, x, y, width, height):
+    """Partition the rectangle proportionally, splitting along the longer side."""
+    if not items:
+        return ""
+    if len(items) > 1:
+        total = sum(amount for _, amount in items)
+        running = 0.0
+        best_index, best_delta = 1, float("inf")
+        for index in range(1, len(items)):
+            running += items[index - 1][1]
+            delta = abs(running / total - 0.5)
+            if delta < best_delta:
+                best_index, best_delta = index, delta
+        left, right = items[:best_index], items[best_index:]
+        fraction = sum(amount for _, amount in left) / total
+        if width >= height:
+            split = width * fraction
+            return (treemap(left, x, y, split, height)
+                    + treemap(right, x + split, y, width - split, height))
+        split = height * fraction
+        return (treemap(left, x, y, width, split)
+                + treemap(right, x, y + split, width, height - split))
+
+    name, percent = items[0]
+    # Leave a narrow gutter between adjacent tiles.
+    inner_x, inner_y = x + 1.5, y + 1.5
+    inner_width, inner_height = width - 3, height - 3
+    if inner_width <= 0 or inner_height <= 0:
+        return ""
+    color = COLORS[name]
+    body = (f'<rect x="{inner_x:.2f}" y="{inner_y:.2f}" '
+            f'width="{inner_width:.2f}" height="{inner_height:.2f}" '
+            f'rx="4" fill="{color}" fill-opacity="0.27" '
+            f'stroke="{color}" stroke-opacity="0.55"/>')
+    if inner_width >= 105 and inner_height >= 48:
+        body += text(inner_x + 13, inner_y + 26, name, 14, FG, 600)
+        body += text(inner_x + 13, inner_y + 45, f"{percent:.1f}%", 12, MUTED)
+    elif inner_width >= 68 and inner_height >= 26:
+        body += text(inner_x + 9, inner_y + 19, name, 12, FG, 500)
+    return body
 
 
 def language_card(shares):
+    """Weighted treemap on the left, legible ranked legend on the right."""
     body = text(28, 35, "Languages", 19, FG, 600)
     body += text(792, 34, f"{len(REPOS)} selected repositories", 12, anchor="end")
-    x, width = 28.0, 764.0
-    body += f'<rect x="{x}" y="61" width="{width}" height="12" fill="{BORDER}"/>'
-    for lang, percent in shares.items():
-        w = width * percent / 100
-        body += f'<rect x="{x:.2f}" y="61" width="{w:.2f}" height="12" fill="{COLORS[lang]}"/>'
-        x += w
-    for i, (lang, percent) in enumerate(shares.items()):
-        x, y = 28 + 265 * (i % 3), 114 + 39 * (i // 3)
+    ordered = list(shares.items())
+    body += treemap(ordered, 28, 58, 464, 235)
+    for index, (lang, percent) in enumerate(ordered):
+        x, y = 530, 78 + index * 33
         body += f'<circle cx="{x + 5}" cy="{y - 4}" r="5" fill="{COLORS[lang]}"/>'
-        body += text(x + 19, y, lang, 13, FG)
-        body += text(x + 241, y, f"{percent:.1f}%", anchor="end")
-    body += text(28, 204, "Repo-balanced source code · excludes markup and notebooks", 11)
-    return frame(224, body)
-
+        body += text(x + 20, y, lang, 13, FG)
+        value = "<0.1%" if 0 < percent < 0.05 else f"{percent:.1f}%"
+        body += text(792, y, value, 13, MUTED, anchor="end")
+    return frame(314, body)
 
 def main():
     metrics = activity()
